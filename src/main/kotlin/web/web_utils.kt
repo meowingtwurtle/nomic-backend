@@ -1,6 +1,7 @@
 package web
 import com.sun.net.httpserver.HttpExchange
 import org.json.JSONObject
+import persistence.UserPersistence
 import java.io.InputStream
 import java.util.*
 
@@ -14,13 +15,23 @@ fun HttpExchange.setResponseType(type: String) {
     responseHeaders.add("Content-Type", type)
 }
 
-fun HttpExchange.getToken(): String? {
-    return getBodyJSON()?.optString("token", null)
+fun JSONObject?.getToken(): String? {
+    return this?.optString("token", null)
+}
+
+fun JSONObject?.isAuthorized(): Boolean = getUser() != null
+
+fun JSONObject?.getUser(): String? {
+    return UserPersistence.getUserFromToken(getToken() ?: return null)
+}
+
+fun JSONObject?.isAdmin(): Boolean {
+    return UserPersistence.tokenIsAdmin(getToken())
 }
 
 fun HttpExchange.getBodyJSON(): JSONObject? {
     return try {
-        JSONObject(text())
+        JSONObject(text().trim())
     } catch (e: Exception) {
         null
     }
